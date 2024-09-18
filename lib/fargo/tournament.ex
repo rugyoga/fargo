@@ -5,6 +5,17 @@ defmodule Fargo.Tournament do
     |> mk_knockout_draw_rec()
   end
 
+  def mk_knockout_draw_rec(prior, i \\ 1) do
+    n = length(prior)
+    if n == 1 do
+      prior
+    else
+      prior
+      |> mk_draw(i)
+      |> then(fn {draw, i} -> mk_knockout_draw_rec(draw, i) end)
+    end
+  end
+
   def round_up_to_power_of_2(n) do
     trunc(:math.pow(2.0, :math.ceil(:math.log(n)/:math.log(2))))
   end
@@ -13,31 +24,58 @@ defmodule Fargo.Tournament do
 
   def pad(participants) do
     n = length(participants)
-    participants
-    |> Kernel.++(add_byes(n+1, round_up_to_power_of_2(n)))
+    powerof2 = round_up_to_power_of_2(n)
+    participants ++ byes(powerof2-n)
   end
 
-  def add_byes(m, n) do
-    if m > n, do: [], else: m..n |> Enum.map(fn _ -> :bye end)
-  end
+  def byes(0), do: []
+  def byes(n), do: Enum.map(1..n, fn _ -> :bye end)
 
-  def mk_draw(players, i) do
-    sorted = players |> Enum.sort(&compare/2)
-    {top, bottom} = Enum.split(sorted, div(length(sorted), 2))
+
+  def assign_match({_, :bye} = pair, match), do: {{0, pair}, match}
+  def assign_match({:bye, _} = pair, match), do: {{0, pair}, match}
+  def assign_match(pair, match), do: {{match, pair}, match+1}
+  def assign_matches(pairs, match), do: Enum.map_reduce(pairs, match, &assign_match/2)
+
+  def mk_draw(players, match) do
+    {top, bottom} = Enum.split(players, div(length(players), 2))
     top
     |> Enum.zip(Enum.reverse(bottom)) # if(reverse, do: Enum.reverse(bottom), else: bottom))
-    |> Enum.map_reduce(i, fn {a, b}, i -> if(a == :bye or b == :bye, do: {{0, {a, b}}, i}, else: {{i, {a, b}}, i+1}) end)
+    |> assign_matches(match)
   end
 
-  def mk_neighbour_draw(players, i) do
+  def mk_neighbour_draw(players, match) do
     players
     |> Enum.chunk_every(2)
-    |> Enum.map_reduce(i, fn [a, b], i -> if(a == :bye or b == :bye, do: {{0, {a, b}}, i}, else: {{i, {a, b}}, i+1}) end)
+    |> Enum.map(&List.to_tuple/1)
+    |> assign_matches(match)
   end
 
   def mk_double(n) do
-    {first_round_matches, i} = Fargo.Tournament.players(n) |> Fargo.Tournament.pad() |> mk_draw(1)
-    mk_double([first_round_matches], [], i) |> display()
+    power2 = round_up_to_power_of_2(n)
+    if n == power2 do
+      {first_round_matches, i} = players(n) |> mk_draw(1)
+      {winners_matches, i} = first_round_matches |> mk_winners() |> mk_neighbour_draw(i)
+      {minor_loser_matches, i} = first_round_matches |> mk_losers() |> mk_neighbour_draw(i)
+      {major_loser_matches, i} = (mk_losers(winners_matches) ++ mk_winners(minor_loser_matches)) |> mk_draw(i)
+      mk_double([winners_matches, first_round_matches], [major_loser_matches, minor_loser_matches], i)
+    else
+      {first_round_matches, i} = players(n) |> pad() |> mk_draw(1)
+      {winners_matches, i} = first_round_matches |> mk_winners() |> mk_draw(i)
+      {minor_loser_matches, i} = first_round_matches |> mk_losers() |> mk_neighbour_draw(i)
+      {major_loser_matches, i} = (mk_losers(winners_matches) ++ mk_winners(minor_loser_matches)) |> mk_draw(i)
+      mk_double([winners_matches, first_round_matches], [major_loser_matches, minor_loser_matches], i)
+    end
+  end
+
+  def mk_double([[{hotseat, _}] | _] = winners_bracket, [[{loser_final, _}] | _] = losers_bracket, match) do
+    [{match, {:winner, hotseat}, {:winner, loser_final}}, winners_bracket, losers_bracket] |> List.flatten |> Enum.sort
+  end
+  def mk_double([winners_last_round | _]=winners_bracket, [losers_last_round |_]=losers_bracket, i) do
+    {winners_matches, i} = winners_last_round |> mk_winners() |> mk_neighbour_draw(i)
+    {minor_loser_matches, i} = losers_last_round |> mk_winners() |> mk_neighbour_draw(i)
+    {major_loser_matches, i} = (mk_losers(winners_matches) ++ mk_winners(minor_loser_matches)) |> mk_draw(i)
+    mk_double([winners_matches | winners_bracket], [major_loser_matches | [minor_loser_matches | losers_bracket]], i)
   end
 
   def display(matches) do
@@ -62,27 +100,11 @@ defmodule Fargo.Tournament do
   def compare(_, {:loser, _}), do: false
   def compare(_, _), do: false
 
-  def mk_double([[{_, _}] | _] = winners_bracket, [[{_, _}] | _] = losers_bracket, _) do
-    [winners_bracket, losers_bracket] |> List.flatten |> Enum.sort
-  end
-  def mk_double([winners_last_round | _]=winners_bracket, losers_bracket, i) do
-    {winners_matches, i} = winners_last_round |> mk_winners() |> mk_neighbour_draw(i)
-    {minor_loser_matches, i} = winners_last_round |> mk_losers() |> mk_neighbour_draw(i)
-    {major_loser_matches, i} = (mk_losers(winners_matches) ++ mk_winners(minor_loser_matches)) |> mk_draw(i)
-    mk_double([winners_matches | winners_bracket], [major_loser_matches | [minor_loser_matches | losers_bracket]], i)
-  end
+
+  def winner({_, {:bye, a}}), do: a
+  def winner({_, {a, :bye}}), do: a
+  def winner({match, _}), do: {:winner, match}
 
   def mk_winners(matches), do: Enum.map(matches, fn {n, {a, b}} -> if(b == :bye, do: a, else: {:winner, n}) end)
   def mk_losers(matches), do: Enum.map(matches, fn {n, {_, b}} -> if(b == :bye, do: :bye, else: {:loser, n}) end)
-
-  def mk_knockout_draw_rec(prior, i \\ 1) do
-    n = length(prior)
-    if n == 1 do
-      prior
-    else
-      prior
-      |> mk_draw(i)
-      |> then(fn {draw, i} -> mk_knockout_draw_rec(draw, i) end)
-    end
-  end
 end
