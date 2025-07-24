@@ -8,15 +8,12 @@ defmodule Fargo.Scraper do
   @weeks "week"
   @current_week "259/"
   @division "15"
-  #@key "bc9e8848-d262-43ca-a0af-b1d40027eb72?_=1724877356990"
   @key "c19cc534-6934-4b07-92a7-b29b010ee369?_=1752186012747"
 
   def players_url, do: [@fargo_base, @players, @key] |> Enum.join("/")
   def teams_url, do: [@fargo_base, @teams, @key] |> Enum.join("/")
   def divisions_url, do: [@sfpa_base, @divisions, @division] |> Enum.join("/")
   def current_week_url, do: [@sfpa_base, @weeks, @current_week] |> Enum.join("/")
-
-
 
   def parse_players(document) do
     [{_, _, players}] = Floki.find(document, "tbody")
@@ -117,5 +114,6 @@ defmodule Fargo.Scraper do
   def cleanse("Coyle’s Nomads"), do: "Coyle's Nomads"
   def cleanse("Gino and Carlo Billiard Club"), do: "Gino & Carlo Billiard Club"
   def cleanse("Smoke & Fizz"), do: "Smoke and Fizz"
+  def cleanse("Pocket Full of FIzz"), do: "Pocket Full of Fizz"
   def cleanse(x), do: x
 end
