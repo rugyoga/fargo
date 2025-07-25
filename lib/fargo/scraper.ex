@@ -111,7 +111,8 @@ defmodule Fargo.Scraper do
         |> Enum.sort_by(fn {_, {max_strength, _}} -> max_strength end) } end)
   end
 
-  # def cleanse("The Black Willows"), do: "Black Willows"
+  def cleanse("The Black Willows"), do: "Black Willows"
+  def cleanse("Bus Stop Pick Me up"), do: "Bus Stop Pick Me Up"
   # def cleanse("Il Pirata Not Your FN Cisters"), do: "Il Pirata Not Your F'ing Cisters"
   #def cleanse("Happy HALLers"), do: "Happy Diamond CueTT's"
   # def cleanse("Gino’s Diamonds"), do: "Gino's Diamonds"
