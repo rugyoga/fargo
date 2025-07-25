@@ -113,6 +113,7 @@ defmodule Fargo.Scraper do
 
   def cleanse("The Black Willows"), do: "Black Willows"
   def cleanse("Bus Stop Pick Me up"), do: "Bus Stop Pick Me Up"
+  def cleanse("Pocket Full of FIzz"), do: "Pocket Full of Fizz"
   # def cleanse("Il Pirata Not Your FN Cisters"), do: "Il Pirata Not Your F'ing Cisters"
   #def cleanse("Happy HALLers"), do: "Happy Diamond CueTT's"
   # def cleanse("Gino’s Diamonds"), do: "Gino's Diamonds"
