@@ -89,7 +89,7 @@ defmodule Fargo.Scraper do
     teams_url()
     |> Fargo.Cache.get()
     |> parse_teams()
-    |> Enum.map(fn {name, players} -> {name, Enum.map(players, &{&1, Map.fetch!(map, &1)}) |> Enum.sort_by(&elem(&1,1), :desc)} end)
+    |> Enum.map(fn {name, players} -> {cleanse(name), Enum.map(players, &{&1, Map.fetch!(map, &1)}) |> Enum.sort_by(&elem(&1,1), :desc)} end)
     |> Map.new()
   end
 
@@ -103,7 +103,12 @@ defmodule Fargo.Scraper do
   def get_division_strength do
     team_map = get_teams() |> Enum.map(fn {name, players} -> {name, range(players)} end) |> Map.new() |> IO.inspect(label: "team_map")
     get_divisions()
-    |> Enum.map(fn {div, teams} -> {div, teams |> Enum.map(fn name -> {cleanse(name), team_map[cleanse(name)]} end) |> Enum.sort_by(fn {_, {max_strength, _}} -> max_strength end) } end)
+    |> Enum.map(
+      fn {div, teams} ->
+        {div,
+        teams
+        |> Enum.map(fn name -> {name, team_map[name]} end)
+        |> Enum.sort_by(fn {_, {max_strength, _}} -> max_strength end) } end)
   end
 
   def cleanse("The Black Willows"), do: "Black Willows"
