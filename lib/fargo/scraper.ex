@@ -113,11 +113,10 @@ defmodule Fargo.Scraper do
 
   def cleanse("The Black Willows"), do: "Black Willows"
   def cleanse("Il Pirata Not Your FN Cisters"), do: "Il Pirata Not Your F'ing Cisters"
-  def cleanse("Happy Diamond CueTTs"), do: "Happy Diamond CueTT's"
+  #def cleanse("Happy HALLers"), do: "Happy Diamond CueTT's"
   def cleanse("Gino’s Diamonds"), do: "Gino's Diamonds"
   def cleanse("Coyle’s Nomads"), do: "Coyle's Nomads"
   def cleanse("Gino and Carlo Billiard Club"), do: "Gino & Carlo Billiard Club"
-  def cleanse("Smoke & Fizz"), do: "Smoke and Fizz"
-  def cleanse("Pocket Full of FIzz"), do: "Pocket Full of Fizz"
-  def cleanse(x), do: x
+  #def cleanse("Smoke & Fizz"), do: "Smoke and Fizz"
+  def cleanse(x), do: String.capitalize(x)
 end
