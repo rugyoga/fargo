@@ -112,7 +112,7 @@ defmodule Fargo.Scraper do
   end
 
   def cleanse("Bus Stop Pick Me up"), do: "Bus Stop Pick Me Up"
-  def cleanse("Coyle’s Commandos"), do: "Coyle's Commandos"
+  def cleanse("Coyle`s Commandos"), do: "Coyle's Commandos"
   def cleanse("Pocket Full of FIzz"), do: "Pocket Full of Fizz"
   def cleanse("The Black Willows"), do: "Black Willows"
   # def cleanse("Il Pirata Not Your FN Cisters"), do: "Il Pirata Not Your F'ing Cisters"
